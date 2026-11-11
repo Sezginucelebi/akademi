@@ -18,7 +18,7 @@ $featuredCourses = $stmt->fetchAll();
 ?>
 
 <!-- Hero Section -->
-<section class="bg-gradient-primary text-white py-5 shadow-sm">
+<section class="text-white py-5 shadow-sm position-relative overflow-hidden" style="background: linear-gradient(rgba(30, 60, 114, 0.88), rgba(42, 82, 152, 0.88)), url('<?php echo SITE_URL; ?>/assets/img/back.jpeg') no-repeat center center; background-size: cover;">
     <div class="container py-4">
         <div class="row align-items-center g-4">
             <div class="col-lg-7">

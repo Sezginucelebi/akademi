@@ -54,8 +54,8 @@ if ($isLocal) {
 define('MAINTENANCE_MODE', false);
 
 // Telegram Bot Bildirim Ayarları
-define('TELEGRAM_BOT_TOKEN', ''); // Telegram Bot Token değerinizi buraya yazın
-define('TELEGRAM_CHAT_ID', '');   // Telegram Chat ID değerinizi buraya yazın
+define('TELEGRAM_BOT_TOKEN', '9175565001:AAEr5yFXPL6hbLWdEO1C_mv6pBCCfdssGdQ');
+define('TELEGRAM_CHAT_ID', '-1003699588273');
 
 // Bakım Modu Kontrolü
 if (defined('MAINTENANCE_MODE') && MAINTENANCE_MODE) {

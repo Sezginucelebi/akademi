@@ -53,6 +53,10 @@ if ($isLocal) {
 // Bakım Modu (true yapıldığında site ziyaretçilere kapatılır, sadece Adminler giriş yapıp erişebilir)
 define('MAINTENANCE_MODE', false);
 
+// Telegram Bot Bildirim Ayarları
+define('TELEGRAM_BOT_TOKEN', ''); // Telegram Bot Token değerinizi buraya yazın
+define('TELEGRAM_CHAT_ID', '');   // Telegram Chat ID değerinizi buraya yazın
+
 // Bakım Modu Kontrolü
 if (defined('MAINTENANCE_MODE') && MAINTENANCE_MODE) {
     $isAdmin = isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'admin';

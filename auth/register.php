@@ -67,6 +67,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 $userId = $db->lastInsertId();
 
+                // Send Telegram Notification
+                $msg = "<b>Yeni Öğrenci Kaydı!</b>\n\n";
+                $msg .= "👤 Ad Soyad: " . htmlspecialchars($fullName) . "\n";
+                $msg .= "✉️ E-Posta: " . htmlspecialchars($email) . "\n";
+                $msg .= "📞 Telefon: " . htmlspecialchars($phone ?: '-') . "\n";
+                $msg .= "🕒 Tarih: " . date('d.m.Y H:i');
+                sendTelegramNotification($msg);
+
                 // Auto login
                 session_regenerate_id(true);
                 $_SESSION['user_id'] = $userId;

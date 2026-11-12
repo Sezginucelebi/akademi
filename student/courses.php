@@ -15,13 +15,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['enroll_course_id'])) 
 
     if (verifyCsrfToken($csrfToken)) {
         try {
-            $stmt = $db->prepare("INSERT IGNORE INTO enrollments (student_id, course_id) VALUES (:student_id, :course_id)");
-            $stmt->execute([':student_id' => $user['id'], ':course_id' => $courseId]);
+            $chk = $db->prepare("SELECT id FROM enrollments WHERE student_id = :student_id AND course_id = :course_id LIMIT 1");
+            $chk->execute([':student_id' => $user['id'], ':course_id' => $courseId]);
+            $alreadyEnrolled = $chk->fetch();
+
+            if (!$alreadyEnrolled) {
+                $stmt = $db->prepare("INSERT INTO enrollments (student_id, course_id) VALUES (:student_id, :course_id)");
+                $stmt->execute([':student_id' => $user['id'], ':course_id' => $courseId]);
+
+                // Fetch course title
+                $cStmt = $db->prepare("SELECT title FROM courses WHERE id = :id LIMIT 1");
+                $cStmt->execute([':id' => $courseId]);
+                $course = $cStmt->fetch();
+                $courseTitle = $course ? $course['title'] : 'Bilinmeyen Ders';
+
+                // Send Telegram Notification
+                $msg = "<b>📚 Öğrenci Derse Kayıt Oldu!</b>\n\n";
+                $msg .= "👤 Öğrenci: " . htmlspecialchars($user['name']) . "\n";
+                $msg .= "✉️ E-Posta: " . htmlspecialchars($user['email']) . "\n";
+                $msg .= "📖 Kurs / Ders: " . htmlspecialchars($courseTitle) . "\n";
+                $msg .= "🕒 Tarih: " . date('d.m.Y H:i');
+                sendTelegramNotification($msg);
+            }
+
             setFlashMessage('success', 'Derse başarıyla kayıt oldunuz!');
             header("Location: " . SITE_URL . "/student/lesson.php?course_id=" . $courseId);
             exit;
         } catch (Exception $e) {
-            setFlashMessage('danger', 'Kayıt sırasında bir hata oluştu.');
+            setFlashMessage('danger', 'Kayıt sırasında bir hata oluştu: ' . $e->getMessage());
         }
     }
 }

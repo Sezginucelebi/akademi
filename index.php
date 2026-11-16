@@ -34,7 +34,7 @@ $featuredCourses = $stmt->fetchAll();
                         </a>
                     <?php else: ?>
                         <a href="<?php echo SITE_URL; ?>/auth/login.php" class="btn btn-light btn-lg text-primary fw-bold px-4 shadow">
-                            <i class="fa-solid fa-right-to-bracket me-2"></i>Öğrenci / Öğretmen Girişi
+                            <i class="fa-solid fa-right-to-bracket me-2"></i>Giriş Yap
                         </a>
                     <?php endif; ?>
                 </div>

@@ -18,11 +18,17 @@ if (isLoggedIn()) {
     exit;
 }
 
+if ($_SERVER['REQUEST_METHOD'] !== 'POST' && (($_GET['open_register'] ?? '') === '1')) {
+    header('Location: ' . SITE_URL . '/auth/login.php?open_register=1');
+    exit;
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $csrfToken = $_POST['csrf_token'] ?? '';
     if (!verifyCsrfToken($csrfToken)) {
         setFlashMessage('danger', 'Geçersiz istek (CSRF doğrulama hatası). Lütfen tekrar deneyin.');
-        header("Location: " . SITE_URL . "/auth/register.php");
+        $redirect = isset($_POST['modal']) ? '/auth/register.php?open_register=1' : '/auth/register.php';
+        header("Location: " . SITE_URL . $redirect);
         exit;
     }
 
@@ -91,6 +97,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             setFlashMessage('danger', 'Kayıt sırasında bir hata oluştu: ' . $e->getMessage());
         }
     }
+}
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['modal']) && isset($_SESSION['flash_message'])) {
+    header('Location: ' . SITE_URL . '/auth/register.php?open_register=1');
+    exit;
 }
 
 require_once __DIR__ . '/../includes/header.php';

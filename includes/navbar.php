@@ -1,5 +1,6 @@
 <?php
 $user = currentUser();
+$flashMessage = getFlashMessage();
 ?>
 <nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom sticky-top py-2">
     <div class="container">
@@ -14,6 +15,10 @@ $user = currentUser();
                 <li class="nav-item">
                     <a class="nav-link fw-medium" href="<?php echo SITE_URL; ?>/index.php">Ana Sayfa</a>
                 </li>
+                <li class="nav-item"><a class="nav-link fw-medium" href="<?php echo SITE_URL; ?>/egitimler.php">Eğitimler</a></li>
+                <li class="nav-item"><a class="nav-link fw-medium" href="<?php echo SITE_URL; ?>/hakkimizda.php">Hakkımızda</a></li>
+                <li class="nav-item"><a class="nav-link fw-medium" href="<?php echo SITE_URL; ?>/akademik-kadro.php">Akademik Kadro</a></li>
+                <li class="nav-item"><a class="nav-link fw-medium" href="<?php echo SITE_URL; ?>/iletisim.php">İletişim</a></li>
                 <?php if ($user): ?>
                     <?php if ($user['role'] === 'student'): ?>
                         <li class="nav-item">
@@ -31,6 +36,9 @@ $user = currentUser();
                         </li>
                         <li class="nav-item">
                             <a class="nav-link fw-medium" href="<?php echo SITE_URL; ?>/teacher/create_course.php">Yeni Ders Oluştur</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link fw-medium" href="<?php echo SITE_URL; ?>/teacher/profile.php">Öz Geçmişim</a>
                         </li>
                     <?php elseif ($user['role'] === 'admin'): ?>
                         <li class="nav-item">
@@ -66,13 +74,114 @@ $user = currentUser();
                         </ul>
                     </div>
                 <?php else: ?>
-                    <a href="<?php echo SITE_URL; ?>/auth/login.php" class="btn btn-auronova px-4"><i class="fa-solid fa-right-to-bracket me-2"></i>Giriş Yap</a>
+                    <button type="button" class="btn btn-auronova px-4" data-bs-toggle="modal" data-bs-target="#loginModal"><i class="fa-solid fa-right-to-bracket me-2"></i>Giriş Yap</button>
                 <?php endif; ?>
             </div>
         </div>
     </div>
 </nav>
 
+<?php if (!$user): ?>
+<style>
+#loginModal #loginTabContent .tab-pane { display: none; }
+#loginModal #loginTabContent .tab-pane.active { display: block; opacity: 1; }
+</style>
+<div class="modal fade" id="loginModal" tabindex="-1" aria-labelledby="loginModalTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header">
+                <h2 class="modal-title fs-5 fw-bold" id="loginModalTitle">Giriş Yap</h2>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Kapat"></button>
+            </div>
+            <div class="modal-body p-4">
+                <?php if (isset($_GET['portal']) || (($_GET['open_register'] ?? '') === '1')) echo $flashMessage; ?>
+                <ul class="nav nav-pills nav-fill mb-4" role="tablist">
+                    <li class="nav-item" role="presentation"><button class="nav-link active" id="modal-student-tab" data-login-pane="modal-student-login" type="button" role="tab" aria-selected="true"><i class="fa-solid fa-user-graduate me-1"></i>Öğrenci</button></li>
+                    <li class="nav-item" role="presentation"><button class="nav-link" id="modal-teacher-tab" data-login-pane="modal-teacher-login" type="button" role="tab" aria-selected="false"><i class="fa-solid fa-chalkboard-user me-1"></i>Öğretmen</button></li>
+                </ul>
+                <div class="tab-content" id="loginTabContent">
+                    <?php foreach (['student' => 'modal-student-login', 'teacher' => 'modal-teacher-login'] as $portal => $paneId): ?>
+                    <div class="tab-pane <?php echo $portal === 'student' ? 'active' : ''; ?>" id="<?php echo $paneId; ?>" role="tabpanel">
+                        <form action="<?php echo SITE_URL; ?>/auth/process_login.php" method="POST">
+                            <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars(generateCsrfToken()); ?>">
+                            <input type="hidden" name="portal" value="<?php echo $portal; ?>">
+                            <?php if (isset($_GET['return_to']) && is_string($_GET['return_to'])): ?><input type="hidden" name="return_to" value="<?php echo htmlspecialchars($_GET['return_to']); ?>"><?php endif; ?>
+                            <div class="mb-3"><label class="form-label" for="modal-<?php echo $portal; ?>-email">E-posta adresi</label><input class="form-control" type="email" id="modal-<?php echo $portal; ?>-email" name="email" autocomplete="username" required></div>
+                            <div class="mb-3"><label class="form-label" for="modal-<?php echo $portal; ?>-password">Parola</label><input class="form-control" type="password" id="modal-<?php echo $portal; ?>-password" name="password" autocomplete="current-password" required></div>
+                            <div class="text-end mb-3"><a class="small text-decoration-none" href="<?php echo SITE_URL; ?>/auth/forgot_password.php">Parolamı unuttum</a></div>
+                            <button class="btn btn-auronova w-100 py-2" type="submit">Giriş Yap</button>
+                        </form>
+                        <?php if ($portal === 'student'): ?><p class="small text-center text-muted mt-3 mb-0">Hesabınız yok mu? <a href="#" data-show-register>Kayıt olun</a></p><?php endif; ?>
+                    </div>
+                    <?php endforeach; ?>
+                </div>
+                    <div id="modal-register" class="d-none">
+                        <button type="button" class="btn btn-link btn-sm text-decoration-none px-0 mb-3" data-show-login><i class="fa-solid fa-arrow-left me-1"></i>Girişe dön</button>
+                        <h3 class="h5 fw-bold mb-3">Öğrenci hesabı oluştur</h3>
+                        <form action="<?php echo SITE_URL; ?>/auth/register.php" method="POST">
+                            <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars(generateCsrfToken()); ?>">
+                            <input type="hidden" name="modal" value="1">
+                            <div class="row g-3 mb-3">
+                                <div class="col-sm-6"><label class="form-label" for="register-first-name">Ad</label><input class="form-control" type="text" id="register-first-name" name="first_name" autocomplete="given-name" required></div>
+                                <div class="col-sm-6"><label class="form-label" for="register-last-name">Soyad</label><input class="form-control" type="text" id="register-last-name" name="last_name" autocomplete="family-name" required></div>
+                            </div>
+                            <div class="mb-3"><label class="form-label" for="register-email">E-posta adresi</label><input class="form-control" type="email" id="register-email" name="email" autocomplete="email" required></div>
+                            <div class="mb-3"><label class="form-label" for="register-phone">Telefon <span class="text-muted small">(isteğe bağlı)</span></label><input class="form-control" type="tel" id="register-phone" name="phone" autocomplete="tel"></div>
+                            <div class="row g-3 mb-3">
+                                <div class="col-sm-6"><label class="form-label" for="register-password">Parola</label><input class="form-control" type="password" id="register-password" name="password" minlength="6" autocomplete="new-password" required></div>
+                                <div class="col-sm-6"><label class="form-label" for="register-confirm-password">Parola tekrar</label><input class="form-control" type="password" id="register-confirm-password" name="confirm_password" minlength="6" autocomplete="new-password" required></div>
+                            </div>
+                            <div class="form-check mb-3"><input class="form-check-input" type="checkbox" id="register-kvkk" name="kvkk" required><label class="form-check-label small" for="register-kvkk">Kişisel verilerimin <a href="<?php echo SITE_URL; ?>/auth/register.php#kvkkModal" target="_blank">KVKK Aydınlatma Metni</a> kapsamında işlenmesini onaylıyorum.</label></div>
+                            <button class="btn btn-auronova w-100 py-2" type="submit"><i class="fa-solid fa-user-plus me-2"></i>Öğrenci hesabı oluştur</button>
+                        </form>
+                    </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+function selectLoginPane(paneId) {
+    document.querySelectorAll('#loginModal [data-login-pane]').forEach(button => {
+        const selected = button.dataset.loginPane === paneId;
+        button.classList.toggle('active', selected);
+        button.setAttribute('aria-selected', selected ? 'true' : 'false');
+    });
+    document.querySelectorAll('#loginModal #loginTabContent .tab-pane').forEach(pane => {
+        pane.classList.toggle('active', pane.id === paneId);
+    });
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+    const params = new URLSearchParams(window.location.search);
+    const portal = params.get('portal');
+    const openRegister = params.get('open_register') === '1';
+    document.querySelectorAll('#loginModal [data-login-pane]').forEach(button => button.addEventListener('click', () => selectLoginPane(button.dataset.loginPane)));
+    if (!openRegister && !['student', 'teacher'].includes(portal)) return;
+    if (!openRegister) {
+        selectLoginPane(portal === 'teacher' ? 'modal-teacher-login' : 'modal-student-login');
+    }
+    const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('loginModal'));
+    modal.show();
+    if (openRegister) showRegistrationForm(true);
+});
+
+function showRegistrationForm(show) {
+    const tabs = document.querySelector('#loginModal .nav[role="tablist"]');
+    const content = document.querySelector('#loginModal .tab-content');
+    const registration = document.getElementById('modal-register');
+    tabs.classList.toggle('d-none', show);
+    content.classList.toggle('d-none', show);
+    registration.classList.toggle('d-none', !show);
+}
+
+document.querySelectorAll('[data-show-register]').forEach(link => link.addEventListener('click', event => {
+    event.preventDefault();
+    showRegistrationForm(true);
+}));
+document.querySelectorAll('[data-show-login]').forEach(button => button.addEventListener('click', () => showRegistrationForm(false)));
+</script>
+<?php endif; ?>
+
 <div class="container mt-2">
-    <?php echo getFlashMessage(); ?>
+    <?php if (!isset($_GET['portal']) && (($_GET['open_register'] ?? '') !== '1')) echo $flashMessage; ?>
 </div>

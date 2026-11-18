@@ -8,6 +8,23 @@ requireRole('admin');
 $user = currentUser();
 $db = getDBConnection();
 
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_teacher_id'])) {
+    if (!verifyCsrfToken($_POST['csrf_token'] ?? '')) {
+        setFlashMessage('danger', 'İstek doğrulanamadı. Lütfen tekrar deneyin.');
+    } else {
+        $teacherId = (int)$_POST['delete_teacher_id'];
+        try {
+            $deleteTeacher = $db->prepare("DELETE FROM users WHERE id = :id AND role = 'teacher'");
+            $deleteTeacher->execute([':id' => $teacherId]);
+            setFlashMessage($deleteTeacher->rowCount() ? 'success' : 'warning', $deleteTeacher->rowCount() ? 'Eğitmen ve ona bağlı eğitim kayıtları silindi.' : 'Eğitmen bulunamadı.');
+        } catch (Exception $e) {
+            setFlashMessage('danger', 'Eğitmen silinirken bir hata oluştu.');
+        }
+    }
+    header('Location: ' . SITE_URL . '/admin/dashboard.php#teachers');
+    exit;
+}
+
 // System stats
 $totalUsers = $db->query("SELECT COUNT(*) FROM users")->fetchColumn();
 $totalStudents = $db->query("SELECT COUNT(*) FROM users WHERE role = 'student'")->fetchColumn();
@@ -60,10 +77,10 @@ $admins = $db->query("SELECT * FROM users WHERE role = 'admin' ORDER BY created_
     </div>
 
     <!-- Teachers Management Section -->
-    <div class="card card-custom p-4 bg-white shadow-sm border-0 mb-4">
+    <div class="card card-custom p-4 bg-white shadow-sm border-0 mb-4" id="teachers">
         <div class="d-flex align-items-center justify-content-between mb-3">
             <h5 class="fw-bold text-dark m-0"><i class="fa-solid fa-chalkboard-user me-2 text-success"></i>Öğretmenler Listesi</h5>
-            <span class="badge bg-success"><?php echo count($teachers); ?> Eğitmen</span>
+            <div class="d-flex align-items-center gap-2"><span class="badge bg-success"><?php echo count($teachers); ?> Eğitmen</span><a href="<?php echo SITE_URL; ?>/admin/teacher_form.php" class="btn btn-sm btn-auronova"><i class="fa-solid fa-user-plus me-1"></i>Eğitmen Ekle</a></div>
         </div>
         <div class="table-responsive">
             <table class="table table-hover align-middle mb-0">
@@ -72,19 +89,23 @@ $admins = $db->query("SELECT * FROM users WHERE role = 'admin' ORDER BY created_
                         <th>#ID</th>
                         <th>Ad Soyad</th>
                         <th>E-Posta Adresi</th>
+                        <th>Öz Geçmiş</th>
                         <th>Kayıt Tarihi</th>
+                        <th class="text-end">İşlemler</th>
                     </tr>
                 </thead>
                 <tbody>
                     <?php if (empty($teachers)): ?>
-                        <tr><td colspan="4" class="text-center text-muted py-3">Kayıtlı öğretmen bulunmuyor.</td></tr>
+                        <tr><td colspan="6" class="text-center text-muted py-3">Kayıtlı öğretmen bulunmuyor.</td></tr>
                     <?php else: ?>
                         <?php foreach ($teachers as $t): ?>
                             <tr>
                                 <td><?php echo $t['id']; ?></td>
                                 <td class="fw-semibold text-dark"><?php echo htmlspecialchars($t['name']); ?></td>
                                 <td><?php echo htmlspecialchars($t['email']); ?></td>
+                                <td><?php echo mb_strlen(trim($t['bio'] ?? ''), 'UTF-8') >= 50 ? '<span class="badge bg-success-subtle text-success">Eklendi</span>' : '<span class="badge bg-warning-subtle text-warning-emphasis">Eksik</span>'; ?></td>
                                 <td class="small text-muted"><?php echo formatDate($t['created_at']); ?></td>
+                                <td><div class="d-flex justify-content-end gap-2"><a href="<?php echo SITE_URL; ?>/admin/teacher_form.php?id=<?php echo (int)$t['id']; ?>" class="btn btn-sm btn-outline-primary"><i class="fa-solid fa-pen-to-square me-1"></i>Düzenle</a><form method="POST" action="<?php echo SITE_URL; ?>/admin/dashboard.php#teachers" onsubmit="return confirm('Bu eğitmeni silmek, ona bağlı kursları, dersleri ve öğrenci kayıtlarını da kalıcı olarak silecek. Devam edilsin mi?');"><input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars(generateCsrfToken()); ?>"><input type="hidden" name="delete_teacher_id" value="<?php echo (int)$t['id']; ?>"><button type="submit" class="btn btn-sm btn-outline-danger"><i class="fa-solid fa-trash me-1"></i>Sil</button></form></div></td>
                             </tr>
                         <?php endforeach; ?>
                     <?php endif; ?>

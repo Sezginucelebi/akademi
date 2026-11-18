@@ -4,6 +4,21 @@ require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../config/auth.php';
 require_once __DIR__ . '/../includes/functions.php';
 
+function loginPageForPortal($portal, $returnTo = '') {
+    $url = SITE_URL . '/auth/login.php?portal=' . ($portal === 'teacher' ? 'teacher' : 'student');
+    if (is_string($returnTo) && preg_match('#^/(?!/)[A-Za-z0-9/_?&=.%+-]*$#', $returnTo) && strpos($returnTo, '..') === false) {
+        $url .= '&return_to=' . rawurlencode($returnTo);
+    }
+    return $url;
+}
+
+$portal = $_POST['portal'] ?? 'student';
+$returnTo = $_POST['return_to'] ?? '';
+$loginPage = loginPageForPortal($portal, $returnTo);
+$isSafeReturnTo = is_string($returnTo)
+    && preg_match('#^/(?!/)[A-Za-z0-9/_?&=.%+-]*$#', $returnTo)
+    && strpos($returnTo, '..') === false;
+
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     header("Location: " . SITE_URL . "/auth/login.php");
     exit;
@@ -13,7 +28,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 $csrfToken = $_POST['csrf_token'] ?? '';
 if (!verifyCsrfToken($csrfToken)) {
     setFlashMessage('danger', 'Geçersiz istek (CSRF doğrulama hatası). Lütfen tekrar deneyin.');
-    header("Location: " . SITE_URL . "/auth/login.php");
+    header("Location: " . $loginPage);
     exit;
 }
 
@@ -22,7 +37,7 @@ $password = $_POST['password'] ?? '';
 
 if (empty($email) || empty($password)) {
     setFlashMessage('danger', 'Lütfen e-posta adresi ve parolanızı girin.');
-    header("Location: " . SITE_URL . "/auth/login.php");
+    header("Location: " . $loginPage);
     exit;
 }
 
@@ -32,12 +47,12 @@ try {
     $stmt->execute([':email' => $email]);
     $user = $stmt->fetch();
 
-    $portal = $_POST['portal'] ?? 'student';
-
     if ($user && password_verify($password, $user['password'])) {
-        if ($portal === 'staff' && $user['role'] === 'student') {
-            setFlashMessage('danger', 'Öğrenci hesapları Akademik Personel girişinden giriş yapamaz. Lütfen Öğrenci Girişi sekmesini kullanın.');
-            header("Location: " . SITE_URL . "/auth/login.php");
+        $portalRoleMatches = ($portal === 'student' && $user['role'] === 'student')
+            || ($portal === 'teacher' && in_array($user['role'], ['teacher', 'admin'], true));
+        if (!$portalRoleMatches) {
+            setFlashMessage('danger', 'Bu hesap seçilen giriş türüyle kullanılamaz. Lütfen doğru giriş ekranını seçin.');
+            header("Location: " . $loginPage);
             exit;
         }
 
@@ -52,6 +67,11 @@ try {
 
         setFlashMessage('success', 'Hoş geldiniz, ' . htmlspecialchars($user['name']) . '!');
 
+        if ($isSafeReturnTo) {
+            header('Location: ' . SITE_URL . $returnTo);
+            exit;
+        }
+
         if ($user['role'] === 'teacher') {
             header("Location: " . SITE_URL . "/teacher/dashboard.php");
         } elseif ($user['role'] === 'admin') {
@@ -62,11 +82,11 @@ try {
         exit;
     } else {
         setFlashMessage('danger', 'E-posta adresi veya parola hatalı.');
-        header("Location: " . SITE_URL . "/auth/login.php");
+        header("Location: " . $loginPage);
         exit;
     }
 } catch (Exception $e) {
     setFlashMessage('danger', 'Giriş sırasında bir hata oluştu: ' . $e->getMessage());
-    header("Location: " . SITE_URL . "/auth/login.php");
+    header("Location: " . $loginPage);
     exit;
 }

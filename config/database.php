@@ -133,7 +133,7 @@ function getDBConnection() {
 
                 $chkTeacher = $pdo->query("SELECT id FROM users WHERE email = 'ogretmen@auronovasoftware.com.tr'")->fetch();
                 if (!$chkTeacher) {
-                    $pdo->exec("INSERT INTO users (name, email, password, role, status) VALUES ('Ahmet Yılmaz (Eğitmen)', 'ogretmen@auronovasoftware.com.tr', '$defaultPass', 'teacher', 1)");
+                    $pdo->exec("INSERT INTO users (name, email, password, role, status) VALUES ('N.Dagan HALİL ( Yazılım Mühendisi )', 'ogretmen@auronovasoftware.com.tr', '$defaultPass', 'teacher', 1)");
                 }
 
                 $chkStudent = $pdo->query("SELECT id FROM users WHERE email = 'ogrenci@auronovasoftware.com.tr'")->fetch();
@@ -143,6 +143,18 @@ function getDBConnection() {
             }
         } catch (Exception $schemaEx) {
             // Şema kontolü hatasını yut
+        }
+
+        // Migrate existing installations using syntax supported by MySQL and MariaDB.
+        $userColumns = $pdo->query("SHOW COLUMNS FROM users")->fetchAll(PDO::FETCH_COLUMN);
+        $teacherProfileColumns = [
+            'bio' => 'TEXT NULL',
+            'expertise' => 'VARCHAR(500) NULL',
+        ];
+        foreach ($teacherProfileColumns as $columnName => $columnDefinition) {
+            if (!in_array($columnName, $userColumns, true)) {
+                $pdo->exec("ALTER TABLE users ADD COLUMN `{$columnName}` {$columnDefinition}");
+            }
         }
     }
 

@@ -31,6 +31,9 @@ $totalStudentsCount = array_sum(array_column($teacherCourses, 'total_students'))
             <p class="text-muted mb-0">Hoş geldin <strong><?php echo htmlspecialchars($user['name']); ?></strong>, derslerini ve öğrencilerini buradan yönetebilirsin.</p>
         </div>
         <div class="mt-3 mt-md-0">
+            <a href="<?php echo SITE_URL; ?>/teacher/profile.php" class="btn btn-outline-primary shadow-sm me-2">
+                <i class="fa-solid fa-file-lines me-2"></i>Öz Geçmişimi Ekle / Düzenle
+            </a>
             <a href="<?php echo SITE_URL; ?>/teacher/create_course.php" class="btn btn-auronova shadow-sm">
                 <i class="fa-solid fa-plus me-2"></i>Yeni Ders Oluştur
             </a>
